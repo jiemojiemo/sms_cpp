@@ -2,7 +2,18 @@
 // Created by william on 2020/2/25.
 //
 
-#ifndef SMS_CPP_SRC_SMS_UTIL_H
-#define SMS_CPP_SRC_SMS_UTIL_H
+#pragma once
+#include <Eigen/Core>
+#include <vector>
 
-#endif //SMS_CPP_SRC_SMS_UTIL_H
+namespace sms
+{
+class SMSUtil
+{
+public:
+    static std::vector<float> zeroPhaseWindowing(const float* input, size_t num_input_samples, size_t win_size);
+
+    static Eigen::ArrayXf zeroPhaseWindowing(const Eigen::ArrayXf& input, size_t win_size);
+
+};
+}
