@@ -1,0 +1,3 @@
+[submodule "libaa"]
+	path = libaa
+	url = https://github.com/jiemojiemo/libaa.git
