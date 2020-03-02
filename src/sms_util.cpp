@@ -60,6 +60,29 @@ Eigen::ArrayXf SMSUtil::unwrap(const Eigen::ArrayXf& input, float tol)
     auto result = unwrap(input.data(), input.size(), tol);
     return Eigen::Map<Eigen::ArrayXf>(result.data(), result.size());
 }
+std::vector<float> SMSUtil::unZeroPhaseWindowing(const float *input, size_t num_input_samples, size_t win_size)
+{
+    std::vector<float> result(win_size);
+    const size_t num_left_part = (win_size + 1) / 2;
+    const size_t num_right_part = (win_size) / 2;
 
+    size_t output_index = 0;
+    for(int i = num_input_samples - num_right_part; i < num_input_samples; ++i)
+    {
+        result[output_index++] = input[i];
+    }
+    for(int i = 0; i < num_left_part; ++i)
+    {
+        result[output_index++] = input[i];
+    }
+
+    return result;
+}
+
+Eigen::ArrayXf SMSUtil::unZeroPhaseWindowing(const Eigen::ArrayXf& input, size_t win_size)
+{
+    auto result = unZeroPhaseWindowing(input.data(), input.size(), win_size);
+    return Eigen::Map<Eigen::ArrayXf>(result.data(), result.size());
+}
 
 }

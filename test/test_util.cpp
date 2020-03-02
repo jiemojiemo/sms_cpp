@@ -63,8 +63,7 @@ TEST_F(AZeroPhaseWindowing, PaddingZeroInMiddleIfWindowSizeLargerThanInputSize)
 
 TEST_F(AZeroPhaseWindowing, ReturnsArrayIfInputIsEigenArray)
 {
-    Eigen::ArrayXf test_data_arary(7);
-    test_data_arary << 0,1,2,3,4,5,6;
+    Eigen::ArrayXf test_data_arary = Map<ArrayXf>(test_data.data(), test_data.size());
     size_t win_size = test_data_arary.size();
 
     Eigen::ArrayXf result = SMSUtil::zeroPhaseWindowing(test_data_arary, win_size);
@@ -73,6 +72,30 @@ TEST_F(AZeroPhaseWindowing, ReturnsArrayIfInputIsEigenArray)
     truth << 3,4,5,6,0,1,2;
     ASSERT_THAT(result.size(), Eq(win_size));
     ASSERT_TRUE(ArrayEq(result, truth));
+}
+
+TEST_F(AZeroPhaseWindowing, UnZeroPhasingRestore)
+{
+    size_t input_size = test_data.size();
+    size_t win_size = input_size + 2;
+    vector<float> zero_phase_result = SMSUtil::zeroPhaseWindowing(test_data.data(), test_data.size(), win_size);
+    vector<float> unzero_phase_result = SMSUtil::unZeroPhaseWindowing(zero_phase_result.data(), zero_phase_result.size(), input_size);
+
+    ASSERT_THAT(unzero_phase_result.size(), Eq(input_size));
+    ASSERT_THAT(unzero_phase_result, ContainerEq(test_data));
+}
+
+TEST_F(AZeroPhaseWindowing, UnZeroPhasingRestoreEigenArray)
+{
+    Eigen::ArrayXf test_data_arary = Map<ArrayXf>(test_data.data(), test_data.size());
+
+    size_t input_size = test_data_arary.size();
+    size_t win_size = input_size + 2;
+    ArrayXf zero_phase_result = SMSUtil::zeroPhaseWindowing(test_data_arary, win_size);
+    ArrayXf unzero_phase_result = SMSUtil::unZeroPhaseWindowing(zero_phase_result, input_size);
+
+    ASSERT_THAT(unzero_phase_result.size(), Eq(input_size));
+    ASSERT_TRUE(ArrayEq(unzero_phase_result, test_data_arary));
 }
 
 class AUnwrap : public Test
