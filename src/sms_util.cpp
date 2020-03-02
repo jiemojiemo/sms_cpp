@@ -55,4 +55,11 @@ std::vector<float> SMSUtil::unwrap(const float *input, size_t num_input, float t
     return result;
 }
 
+Eigen::ArrayXf SMSUtil::unwrap(const Eigen::ArrayXf& input, float tol)
+{
+    auto result = unwrap(input.data(), input.size(), tol);
+    return Eigen::Map<Eigen::ArrayXf>(result.data(), result.size());
+}
+
+
 }

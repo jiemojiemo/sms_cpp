@@ -9,7 +9,7 @@
 using namespace std;
 using namespace testing;
 using namespace sms;
-
+using namespace Eigen;
 
 class AZeroPhaseWindowing : public Test
 {
@@ -75,10 +75,27 @@ TEST_F(AZeroPhaseWindowing, ReturnsArrayIfInputIsEigenArray)
     ASSERT_TRUE(ArrayEq(result, truth));
 }
 
-TEST(AUnwrap, Plus2PiIfAdjacentValueDiffLargerPi)
+class AUnwrap : public Test
 {
+public:
     vector<float> test_data{3.13, -3.12, 3.12, 3.13, -3.11};
+    vector<float> ground_truth{3.13f,3.16318531f,3.12f,3.13f,3.17318531f};
+
+};
+
+TEST_F(AUnwrap, Plus2PiIfAdjacentValueDiffLargerPi)
+{
     vector<float> result = SMSUtil::unwrap(test_data.data(), test_data.size());
 
-    ASSERT_THAT(result, ContainerEq(vector<float>({3.13f,3.16318531f,3.12f,3.13f,3.17318531f})));
+    ASSERT_THAT(result, ContainerEq(ground_truth));
+}
+
+TEST_F(AUnwrap, ReturnsArrayIfInputIsEigenArray)
+{
+    Map<ArrayXf> test_array(test_data.data(), test_data.size());
+    Map<ArrayXf> ground_truth_array(ground_truth.data(), ground_truth.size());
+
+    auto result = SMSUtil::unwrap(test_array);
+    ASSERT_TRUE(ArrayEq(result, ground_truth_array));
+
 }

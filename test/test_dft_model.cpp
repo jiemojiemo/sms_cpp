@@ -28,12 +28,15 @@ public:
         Eigen::ArrayXcf X(output_size);
         fft.forward(fft_buffer.data(),X.data());
 
+        // avoid log zero
         const float eps = std::numeric_limits<float>::min();
         Eigen::ArrayXf absX = X.abs();
         absX = (absX < eps).select(eps, absX);
 
         ArrayXf mX = 20 * absX.log10();
         ArrayXf pX = X.arg();
+
+        pX = SMSUtil::unwrap(pX);
 
         return std::make_tuple(mX, pX);
     }
@@ -46,7 +49,7 @@ TEST(ADFTModel, AnalyzeReturnsMagnitudeAndPhaseSpectrum)
 
     auto w = Window::getWindow(WindowType::kHann, input_size, false);
     Map<ArrayXf> window(w.data(), w.size());
-    
+
     ArrayXf test_data = ArrayXf::Constant(input_size, 1.0f);
 
     auto [mag, pahse] = DFTModel::Analyze(test_data, window, n_fft);
