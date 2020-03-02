@@ -35,8 +35,6 @@ public:
         ArrayXf mX = 20 * absX.log10();
         ArrayXf pX = X.arg();
 
-//        cout << mX << endl;
-
         return std::make_tuple(mX, pX);
     }
 };
@@ -46,8 +44,9 @@ TEST(ADFTModel, AnalyzeReturnsMagnitudeAndPhaseSpectrum)
     size_t input_size = 10;
     size_t n_fft = 16;
 
-    ArrayXf window = Window::getWindow(WindowType::kHann, input_size, false);
-
+    auto w = Window::getWindow(WindowType::kHann, input_size, false);
+    Map<ArrayXf> window(w.data(), w.size());
+    
     ArrayXf test_data = ArrayXf::Constant(input_size, 1.0f);
 
     auto [mag, pahse] = DFTModel::Analyze(test_data, window, n_fft);

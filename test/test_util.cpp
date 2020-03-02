@@ -11,7 +11,7 @@ using namespace testing;
 using namespace sms;
 
 
-class ASMSUtil : public Test
+class AZeroPhaseWindowing : public Test
 {
 public:
     vector<float> test_data{0,1,2,3,4,5,6};
@@ -34,7 +34,7 @@ bool ArrayEq(const Eigen::ArrayXf& lhs, const Eigen::ArrayXf& rhs)
 }
 
 
-TEST_F(ASMSUtil, ZeroPhaseWindowingReturnWinSizeResult)
+TEST_F(AZeroPhaseWindowing, ReturnWinSizeResult)
 {
     size_t win_size = test_data.size();
 
@@ -43,7 +43,7 @@ TEST_F(ASMSUtil, ZeroPhaseWindowingReturnWinSizeResult)
     ASSERT_THAT(result.size(), Eq(win_size));
 }
 
-TEST_F(ASMSUtil, ZeroPhaseWindowingWithTheSameSize)
+TEST_F(AZeroPhaseWindowing, ChangesLeftAndRightPart)
 {
     size_t win_size = test_data.size();
 
@@ -52,7 +52,7 @@ TEST_F(ASMSUtil, ZeroPhaseWindowingWithTheSameSize)
     ASSERT_THAT(result, ContainerEq(vector<float>({3,4,5,6,0,1,2})));
 }
 
-TEST_F(ASMSUtil, ZeroPhaseWindowingWithLargerWidnowSizeWillPaddingZeroInMiddle)
+TEST_F(AZeroPhaseWindowing, PaddingZeroInMiddleIfWindowSizeLargerThanInputSize)
 {
     size_t win_size = test_data.size() + 2;
 
@@ -61,7 +61,7 @@ TEST_F(ASMSUtil, ZeroPhaseWindowingWithLargerWidnowSizeWillPaddingZeroInMiddle)
     ASSERT_THAT(result, ContainerEq(vector<float>({3,4,5,6,0,0,0,1,2})));
 }
 
-TEST_F(ASMSUtil, ZeroPhasWindowingReturnsArrayIfInputIsArray)
+TEST_F(AZeroPhaseWindowing, ReturnsArrayIfInputIsEigenArray)
 {
     Eigen::ArrayXf test_data_arary(7);
     test_data_arary << 0,1,2,3,4,5,6;
@@ -73,4 +73,12 @@ TEST_F(ASMSUtil, ZeroPhasWindowingReturnsArrayIfInputIsArray)
     truth << 3,4,5,6,0,1,2;
     ASSERT_THAT(result.size(), Eq(win_size));
     ASSERT_TRUE(ArrayEq(result, truth));
+}
+
+TEST(AUnwrap, Plus2PiIfAdjacentValueDiffLargerPi)
+{
+    vector<float> test_data{3.13, -3.12, 3.12, 3.13, -3.11};
+    vector<float> result = SMSUtil::unwrap(test_data.data(), test_data.size());
+
+    ASSERT_THAT(result, ContainerEq(vector<float>({3.13f,3.16318531f,3.12f,3.13f,3.17318531f})));
 }

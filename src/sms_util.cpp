@@ -36,4 +36,23 @@ Eigen::ArrayXf SMSUtil::zeroPhaseWindowing(const Eigen::ArrayXf& input, size_t w
     return Eigen::Map<Eigen::ArrayXf>(result.data(), win_size);
 }
 
+std::vector<float> SMSUtil::unwrap(const float *input, size_t num_input, float tol)
+{
+    std::vector<float> result(input, input+num_input);
+    if(num_input <= 1)
+    {
+        return result;
+    }
+
+    for(int i = 1; i < num_input; ++i)
+    {
+        float diff = fabsf(result[i] - result[i-1]);
+        if(diff > tol)
+        {
+            result[i] += 2*M_PI;
+        }
+    }
+    return result;
+}
+
 }

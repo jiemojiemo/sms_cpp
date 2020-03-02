@@ -15,5 +15,7 @@ public:
 
     static Eigen::ArrayXf zeroPhaseWindowing(const Eigen::ArrayXf& input, size_t win_size);
 
+    static std::vector<float> unwrap(const float* input, size_t num_input, float tol = M_PI);
+
 };
 }
