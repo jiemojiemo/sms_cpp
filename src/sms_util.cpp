@@ -35,6 +35,19 @@ Eigen::ArrayXf SMSUtil::zeroPhaseWindowing(const Eigen::ArrayXf& input, size_t w
     auto result = zeroPhaseWindowing(input.data(), input.size(), win_size);
     return Eigen::Map<Eigen::ArrayXf>(result.data(), win_size);
 }
+// wrap to [-pi,pi]
+double angleNorm(double x)
+{
+    x = fmod(x + M_PI, 2*M_PI);
+    if (x < 0)
+        x += 2*M_PI;
+    return x - M_PI;
+}
+
+double phaseUnwrap(double prev, double now)
+{
+    return prev + angleNorm(now - prev);
+}
 
 std::vector<float> SMSUtil::unwrap(const float *input, size_t num_input, float tol)
 {
@@ -46,11 +59,7 @@ std::vector<float> SMSUtil::unwrap(const float *input, size_t num_input, float t
 
     for(int i = 1; i < num_input; ++i)
     {
-        float diff = fabsf(result[i] - result[i-1]);
-        if(diff > tol)
-        {
-            result[i] += 2*M_PI;
-        }
+        result[i] = phaseUnwrap(result[i-1], result[i]);
     }
     return result;
 }
