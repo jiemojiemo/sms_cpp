@@ -14,8 +14,10 @@ include_directories(${libaa_SOURCE_DIR}/third_party/kissfft)
 set(SMS_SRC
         src/sms_util.cpp
         src/dft_model.cpp
+        src/stft_model.cpp
         )
 
 add_library(sms ${SMS_SRC})
 
 add_subdirectory(test)
+add_subdirectory(example)

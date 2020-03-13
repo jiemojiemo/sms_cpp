@@ -22,8 +22,8 @@ public:
         auto w = Window::getWindow(WindowType::kHann, input_size, false);
         window = Map<ArrayXf>(w.data(), w.size());
     }
-    size_t input_size = 10;
-    size_t n_fft = 16;
+    size_t input_size = 501;
+    size_t n_fft = 1024;
     ArrayXf window;
     ArrayXf test_data;
 };

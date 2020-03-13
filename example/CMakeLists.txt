@@ -1,0 +1,2 @@
+add_executable(stft_example stft_example.cpp)
+target_link_libraries(stft_example sms libaa)
