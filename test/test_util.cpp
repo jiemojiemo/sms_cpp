@@ -2,7 +2,10 @@
 // Created by william on 2020/2/25.
 //
 
+#include "libaa/include/dsp/aa_window.h"
 #include "sms_util.h"
+#include "test_helper.h"
+#include "dft_model.h"
 #include <gmock/gmock.h>
 #include <vector>
 
@@ -10,6 +13,7 @@ using namespace std;
 using namespace testing;
 using namespace sms;
 using namespace Eigen;
+using namespace libaa;
 
 class AZeroPhaseWindowing : public Test
 {
@@ -103,7 +107,6 @@ class AUnwrap : public Test
 public:
     vector<float> test_data{3.13, -3.12, 3.12, 3.13, -3.11};
     vector<float> ground_truth{3.13f,3.16318531f,3.12f,3.13f,3.17318531f};
-
 };
 
 TEST_F(AUnwrap, Plus2PiIfAdjacentValueDiffLargerPi)
@@ -120,5 +123,110 @@ TEST_F(AUnwrap, ReturnsArrayIfInputIsEigenArray)
 
     auto result = SMSUtil::unwrap(test_array);
     ASSERT_TRUE(ArrayEq(result, ground_truth_array));
+}
 
+class APeakDetection : public Test
+{
+public:
+    void SetUp() override
+    {
+        auto window = Window::getWindow(WindowType::kHann, window_size, false);
+        auto sine_440 = TestHelper::generateSineWave(freq, sr, window_size);
+
+        w = Map<ArrayXf>(window.data(), window.size());
+        x = Map<ArrayXf>(sine_440.data(), sine_440.size());
+    }
+
+    size_t window_size = 501;
+    size_t fft_size = 512;
+    float sr = 44100;
+    float freq = 440;
+    float freq_resolution = sr/fft_size;
+    ArrayXf w;
+    ArrayXf x;
+};
+
+TEST_F(APeakDetection, ReturnsEmptyLocationIfInputLessThan3Samples)
+{
+    vector<float> test_data(2);
+    float threshold = 0;
+
+    auto result = SMSUtil::peakDetection(test_data.data(), test_data.size(), threshold);
+
+    ASSERT_THAT(result.size(), Eq(0));
+}
+
+TEST_F(APeakDetection, GetPeakLocationFromMagnitudes)
+{
+    auto [mx, px] = DFTModel::analyze(x,w,fft_size);
+    float threshold = -40.0f;
+
+    auto result = SMSUtil::peakDetection(mx.data(), mx.size(), threshold);
+
+    ASSERT_THAT(result.size(), Eq(1));
+    ASSERT_THAT(result[0], Eq(static_cast<size_t>(freq/freq_resolution)));
+}
+
+TEST_F(APeakDetection, InterpolatePeak)
+{
+    auto [mx, px] = DFTModel::analyze(x,w,fft_size);
+    float threshold = -40.0f;
+    auto result = SMSUtil::peakDetection(mx, threshold);
+
+    auto [iploc, ipmag, ipphase] = SMSUtil::peakInterp(mx, px, result);
+
+    ASSERT_THAT(iploc(0)*freq_resolution, FloatNear(freq, 2.0f));
+}
+
+class ALinearInterpolation : public Test
+{
+public:
+    ALinearInterpolation() :
+        fp(num_fp),
+        xp(num_xp)
+    {
+
+    }
+
+    void SetUp() override
+    {
+        fp << 3,2,0;
+        xp << 0.5, 1.5;
+    }
+    size_t num_fp = 3;
+    size_t num_xp = 2;
+    ArrayXf fp;
+    ArrayXf xp;
+
+};
+
+TEST_F(ALinearInterpolation, ReturnsFirstValueIfXcoordinateLessThanZero)
+{
+    float x = -1.0;
+
+    float interp_x = SMSUtil::LinearInterp(x, fp);
+    ASSERT_THAT(interp_x, Eq(fp(0)));
+}
+
+TEST_F(ALinearInterpolation, ReturnsLastValueIfXcoordinateGreaterThanFPsize)
+{
+    float x = 4;
+    float interp_x = SMSUtil::LinearInterp(x, fp);
+    ASSERT_THAT(interp_x, Eq(fp(fp.size() -1)));
+}
+
+TEST_F(ALinearInterpolation, ReturnsLinearInterpValue)
+{
+    float x = 1.5;
+
+    float interp_x = SMSUtil::LinearInterp(x, fp);
+    ASSERT_THAT(interp_x, FloatEq(1.0f));
+}
+
+TEST_F(ALinearInterpolation, Interpolation1DArray) {
+    ArrayXf inter_x = SMSUtil::LinearInterp(xp, fp);
+
+    ASSERT_THAT(inter_x.size(), Eq(xp.size()));
+    ASSERT_THAT(inter_x(0), FloatEq((3.0f + 2.0f) / 2));
+    ASSERT_THAT(inter_x(1), FloatEq(1.0f));
 }

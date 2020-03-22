@@ -4,6 +4,9 @@ project(sms_cpp)
 
 set(CMAKE_CXX_STANDARD 17)
 
+# must return value if you define non-void function
+add_compile_options(-Werror=return-type)
+
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(include)
 

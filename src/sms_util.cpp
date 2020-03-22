@@ -3,6 +3,10 @@
 //
 
 #include "include/sms_util.h"
+using Eigen::ArrayXf;
+using Eigen::Map;
+using Eigen::Array;
+
 namespace sms
 {
 std::vector<float> SMSUtil::zeroPhaseWindowing(const float* input, size_t num_input_samples, size_t win_size)
@@ -93,5 +97,99 @@ Eigen::ArrayXf SMSUtil::unZeroPhaseWindowing(const Eigen::ArrayXf& input, size_t
     auto result = unZeroPhaseWindowing(input.data(), input.size(), win_size);
     return Eigen::Map<Eigen::ArrayXf>(result.data(), result.size());
 }
+std::vector<size_t> SMSUtil::peakDetection(const float *input, size_t num_input_samples, float t)
+{
+    Map<const ArrayXf> x(input, num_input_samples);
+    auto result_array = peakDetection(x, t);
+    std::vector<size_t> result(result_array.data(), result_array.data() + result_array.size());
+    return result;
+}
+Eigen::Array<size_t, Eigen::Dynamic, 1> SMSUtil::peakDetection(const Eigen::ArrayXf &input, float t)
+{
+    // at least 3 samples
+    if(input.size() < 3)
+    {
+        return Eigen::Array<size_t, Eigen::Dynamic, 1>();
+    }
+
+    // x[1:-1]
+    Eigen::ArrayXf middle = input.segment(1, input.size() - 2);
+    // x[2:]
+    Eigen::ArrayXf next = input.segment(2, input.size() - 2);
+    // x[0:-2]
+    Eigen::ArrayXf prev = input.segment(0, input.size() - 2);
+
+
+    Eigen::ArrayXi above_threshold = (middle > t).cast<int>();
+    Eigen::ArrayXi next_minor = ((middle - next) > 0).cast<int>();
+    Eigen::ArrayXi prev_minor = ((middle - prev) > 0).cast<int>();
+    Eigen::ArrayXi ploc = above_threshold * next_minor * prev_minor;
+
+    std::vector<size_t> result;
+    for(size_t i = 0; i < ploc.size(); ++i)
+    {
+        if(ploc(i) != 0)
+        {
+            result.push_back(i + 1); // add 1 to compensate for previous steps
+        }
+    }
+
+    return Map<Array<size_t, Eigen::Dynamic, 1>>(result.data(), result.size());
+}
+
+float SMSUtil::LinearInterp(float x, const Eigen::ArrayXf& fp)
+{
+    if(x < 0.0)
+    {
+        return fp(0);
+    }
+
+    if(x > static_cast<float>(fp.size()))
+    {
+        return fp(fp.size() - 1);
+    }
+
+    auto prev_index = static_cast<size_t>(std::floorf(x));
+    auto next_index = static_cast<size_t>(std::ceilf(x));
+    auto fraction = static_cast<float>(next_index) - x;
+
+    return fraction*fp(prev_index) + (1.0f-fraction)*fp(next_index);
+}
+
+Eigen::ArrayXf SMSUtil::LinearInterp(const Eigen::ArrayXf &xp, const Eigen::ArrayXf &fp)
+{
+    ArrayXf result(xp.size());
+
+    for(size_t i = 0; i < xp.size(); ++i)
+    {
+        result(i) = LinearInterp(xp(i), fp);
+    }
+
+    return result;
+}
+std::tuple<Eigen::ArrayXf, Eigen::ArrayXf, Eigen::ArrayXf> SMSUtil::peakInterp(
+    const Eigen::ArrayXf &mx,
+    const Eigen::ArrayXf &px,
+    const Eigen::Array<size_t, Eigen::Dynamic, 1>& ploc)
+{
+    ArrayXf val(ploc.size());
+    ArrayXf lval(ploc.size());
+    ArrayXf rval(ploc.size());
+    for(size_t i = 0; i < ploc.size(); ++i)
+    {
+        val(i) = mx( ploc(i) );
+        lval(i) = mx( ploc(i) - 1 );
+        rval(i) = mx(ploc(i) + 1);
+    }
+
+    ArrayXf ploc_float = ploc.cast<float>();
+    ArrayXf interp_ploc = ploc_float + 0.5f*(lval - rval)/(lval - 2.0f*val + rval);
+    ArrayXf interp_mag = val - 0.25f*(lval - rval)*(interp_ploc - ploc_float);
+    ArrayXf interp_phase = LinearInterp(interp_ploc, px);
+
+
+    return {interp_ploc, interp_mag, interp_phase};
+}
+
 
 }
